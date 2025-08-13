@@ -44,7 +44,7 @@ class TextEncoder(nn.Module):
         else:
             assert False, f'error: Text Encoder "{self.text_backbone_name}" is not supported'
 
-        self.freeze_text_encoder = args.freeze_text_encoder
+        self.freeze_text_encoder = True
         if self.freeze_text_encoder:
             # self.text_backbone.eval()
             for p in self.text_backbone.parameters():

@@ -1,6 +1,6 @@
 """
-Training script of VDIT
-Modified from DETR and SgMg (https://github.com/facebookresearch/detr, https://github.com/bo-miao/SgMg) 
+Training script of HCD
+Modified from DETR SgMg and VD-IT (https://github.com/facebookresearch/detr, https://github.com/bo-miao/SgMg, https://github.com/buxiangzhiren/VD-IT) 
 """
 import argparse
 import datetime
@@ -16,7 +16,6 @@ from peft import LoraConfig, TaskType, get_peft_model
 from transformers import Trainer, TrainingArguments
 from torch.utils.data import DataLoader, DistributedSampler
 import torch.cuda.amp as amp
-
 import util.misc as utils
 import datasets.samplers as samplers
 from datasets import build_dataset, get_coco_api_from_dataset
@@ -42,8 +41,6 @@ def match_name_keywords(n, name_keywords):
 
 
 def main(args):
-    args.masks = True
-    args.binary = True  # only run on binary referred for joint
 
     utils.init_distributed_mode(args)
     os.makedirs(args.output_dir, exist_ok=True)
@@ -67,10 +64,11 @@ def main(args):
         logger.log_string('hyperpara', str(args))
 
     model, criterion, postprocessor = build_model(args)
-    dict = torch.load('checkpoints/checkpoint0.pth', map_location="cpu")
-    model.load_state_dict(dict["model"])
+    if args.resume or args.eval:
+        dict = torch.load(args.resume_path, map_location="cpu")
+        model.load_state_dict(dict["model"])
     model.to(device)
-    if not args.eval:
+    if not args.eval and args.resume:
         peft_config = LoraConfig(task_type='OTHER', inference_mode=False, r=16, lora_alpha=32,
                                  lora_dropout=0.1,
                                  target_modules='.*unet.*to_[q,v].*')
@@ -119,7 +117,7 @@ def main(args):
                                   weight_decay=args.weight_decay)
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, args.lr_drop)
     grad_scaler = amp.GradScaler(enabled=args.amp)
-    if not args.eval:
+    if not args.eval and args.resume:
         optimizer.load_state_dict(dict["optimizer"])
         lr_scheduler.load_state_dict(dict["lr_scheduler"])
         grad_scaler.load_state_dict(dict["grad_scaler"])
@@ -166,9 +164,6 @@ def main(args):
     if args.dataset_file != "davis" and args.dataset_file != "jhmdb" and args.pretrained_weights is not None:
         print("============================================>")
         print("Load pretrained weights from {} ...".format(args.pretrained_weights))
-        # checkpoint = torch.load(args.pretrained_weights, map_location="cpu")
-        # checkpoint_dict = pre_trained_model_to_finetune(checkpoint, args)
-        # model_without_ddp.load_state_dict(checkpoint_dict, strict=False)
         print("============================================>")
 
     output_dir = Path(args.output_dir)
@@ -295,9 +290,8 @@ def main(args):
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print('\n **** Total training time for this task is {}. **** \n'.format(total_time_str))
 
-
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('VDIT training and evaluation script', parents=[opts.get_args_parser()])
+    parser = argparse.ArgumentParser('HCD training and evaluation script', parents=[opts.get_args_parser()])
     args = parser.parse_args()
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)

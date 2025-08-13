@@ -11,3 +11,13 @@ imgaug
 h5py
 av
 peft
+huggingface_hub==0.25.0
+accelerate
+diffusers
+einops
+decord
+tqdm
+safetensors
+omegaconf
+pydantic
+compel
