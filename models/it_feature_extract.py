@@ -2,22 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint
-from mymodels.unet_3d_condition_it import UNet3DConditionModel
-from mydiffusers.models.autoencoders.autoencoder_kl import AutoencoderKL
-from diffusers import DPMSolverMultistepScheduler, DDPMScheduler, TextToVideoSDPipeline
-from diffusers.optimization import get_scheduler
-from diffusers.utils import check_min_version, export_to_video
-from diffusers.utils.import_utils import is_xformers_available
-from diffusers.models.attention_processor import AttnProcessor2_0, Attention
-from diffusers.models.attention import BasicTransformerBlock
-from transformers import AutoProcessor, CLIPVisionModel, CLIPVisionModelWithProjection, ResNetForImageClassification, \
-    AutoImageProcessor
+from .unet_3d_condition_it import UNet3DConditionModel
+from diffusers import AutoencoderKL
+from diffusers import DDPMScheduler
+from transformers import AutoProcessor,CLIPVisionModelWithProjection
 from transformers import CLIPTextModel, CLIPTokenizer
-from transformers.models.clip.modeling_clip import CLIPEncoder
-from utils.dataset import VideoJsonDataset, SingleVideoDataset, \
-    ImageDataset, VideoFolderDataset, CachedDataset
 from einops import rearrange, repeat
-from models.first_feature import FirstFeatureExtractor
+from .temporal_mask_refinement import FirstFeatureExtractor
 from util.misc import NestedTensor
 from typing import Dict, List
 from models.position_encoding import build_position_encoding
@@ -59,17 +50,12 @@ class MultiHeadAttention(nn.Module):
 
     def forward(self, q, k, v):
         d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
-
         sz_b, len_q, len_k, len_v = q.size(0), q.size(1), k.size(1), v.size(1)
-
         residual = q
-
         q = self.w_qs(q).view(sz_b, len_q, n_head, d_k)
         k = self.w_ks(k).view(sz_b, len_k, n_head, d_k)
         v = self.w_vs(v).view(sz_b, len_v, n_head, d_v)
-
         q, k, v = q.transpose(1, 2), k.transpose(1, 2), v.transpose(1, 2)
-
         q, attn = self.attention(q, k, v)
         q = q.transpose(1, 2).contiguous().view(sz_b, len_q, -1)
         q = self.fc(q)
@@ -89,12 +75,9 @@ class PositionwiseFeedForward(nn.Module):
 
     def forward(self, x):
         residual = x
-
         x = self.w_2(F.relu(self.w_1(x)))
         x += residual
-
         x = self.layer_norm(x)
-
         return x
 
 
@@ -132,7 +115,7 @@ class FeatureExtractor(torch.nn.Module):
 
     def __init__(
             self,
-            pretrained_model_path='/root/fssd/VD-IT/Text-To-Video-Finetuning/mymodels/model_scope_diffusers',
+            pretrained_model_path='/mnt/data/user/zhangruixin/VD-IT/weight',
             num_channels=[128, 256, 512, 1024]
     ):
         super().__init__()
@@ -196,7 +179,7 @@ class FeatureExtractor(torch.nn.Module):
         self.projection = ResidualMLP()
         self.cv_processor = AutoProcessor.from_pretrained("laion/CLIP-ViT-H-14-laion2B-s32B-b79K")
         self.freeze_models(
-            [self.vae, self.text_encoder, self.unet, self.cv_model])  # self.cv_model
+            [self.vae, self.text_encoder, self.unet, self.cv_model])
         self.unet.eval()
         self.text_encoder.eval()
         self.cv_model.eval()
@@ -218,81 +201,46 @@ class FeatureExtractor(torch.nn.Module):
 
     def tensor_to_vae_latent(self, t):
         video_length = t.shape[1]
-
         t = rearrange(t, "b f c h w -> (b f) c h w")
-        latents, rt_feature = self.vae.encode(t).latent_dist
-        latents = latents.sample()  # 采样?
-        # latents = vae.encode(t).latent_dist.sample()
+        latents = self.vae.encode(t).latent_dist.sample()
         latents = rearrange(latents, "(b f) c h w -> b c f h w", f=video_length)
-        ft1_all = []
-        ft2_all = []
-        for eft in rt_feature:
-            ft1_all.append(eft[0])
-            ft2_all.append(eft[1])
-        ft1_all = torch.cat(ft1_all)
-        ft2_all = torch.cat(ft2_all)
         latents = latents * 0.18215
-        return latents, [ft1_all, ft2_all]
-
-    def sample_noise(self, latents, noise_strength, use_offset_noise=False):
-        b ,c, f, *_ = latents.shape
-        noise_latents = torch.randn_like(latents, device=latents.device)
-        offset_noise = None
-
-        if use_offset_noise:
-            offset_noise = torch.randn(b, c, f, 1, 1, device=latents.device)
-            noise_latents = noise_latents + noise_strength * offset_noise
-        return noise_latents
+        return latents
 
     def forward(self, batch):
 
         pixel_values = batch["pixel_values"]  # 获取像素值 范围为[-1,1]
-        video_length = pixel_values.shape[1]  # 获取num_frames
+        video_length = pixel_values.shape[1]  # num_frames
         original_pixel_values = ((pixel_values + 1) * 127.5).to(dtype=torch.int)  # 从归一化中恢复图像,范围为0-255
         original_pixel_values = rearrange(original_pixel_values, "b f c h w -> (b f) c h w")
-        original_pixel_values = self.cv_processor(images=original_pixel_values,  # 图像clip预处理,返回pytorch形式,裁剪成(224,224)
+        original_pixel_values = self.cv_processor(images=original_pixel_values,  # 图像clip预处理,返回图片大小(224,224)
                                                   return_tensors="pt")["pixel_values"].cuda()
         # pixel_values_ = rearrange(pixel_values, "b f c h w -> (b f) c h w")
         pixel_values_ = (pixel_values + 1) / 2
         first_feature = self.first_feature(pixel_values_)
-        del pixel_values_
         image_tokens = self.cv_model(original_pixel_values).last_hidden_state  # clip编码
-        del original_pixel_values
 
         encoder_hidden_states = self.get_prompt_ids(batch["captions"])  # 文本clip编码预处理
         encoder_hidden_states = self.text_encoder(encoder_hidden_states.cuda())[0]  # clip编码(1,77,1024)
-        encoder_hidden_states = encoder_hidden_states.repeat_interleave(repeats=video_length, dim=0)  # (b*f,77,1024)
-        image_tokens = self.projection(image_tokens)  # 1280->1024(5,257,1024)
-        encoder_hidden_states_c = self.cross_attn(encoder_hidden_states, image_tokens)  # 模态融合(b*f,77,1024)
+        encoder_hidden_states = encoder_hidden_states.repeat_interleave(repeats=video_length, dim=0)  # (b*f,l,1024)
+        image_tokens = self.projection(image_tokens)  # 1280->1024(b*f,length,1024)
+        encoder_hidden_states_c = self.cross_attn(encoder_hidden_states, image_tokens)  # 模态融合(b*f,l,1024)
 
-        latents, ret_ft_e = self.tensor_to_vae_latent(pixel_values)  # 用vae进行数据压缩 latents(b,4,f,h/8,w/8)
+        latents = self.tensor_to_vae_latent(pixel_values)  # 用vae进行数据压缩 latents(b,4,f,h/8,w/8)
 
         # Get video length
         video_length = latents.shape[2]
-
-        # Sample noise that we'll add to the latents
         bsz = latents.shape[0]
 
-        # 前向过程，随机采样时间步，加噪
-        # Sample a random timestep for each video
+        # Sample 0
         timesteps = torch.randint(0, self.noise_scheduler.num_train_timesteps, (bsz,), device=latents.device)
         timesteps = timesteps.long()
-
-        # Add noise to the latents according to the noise magnitude at each timestep
-        # (this is the forward diffusion process)
         timesteps = torch.zeros_like(timesteps)
-        # # Encode text embeddings
-        # token_ids = batch['prompt_ids']
 
-        # # Assume extra batch dimnesion.
-        # if len(token_ids.shape) > 2:
-        #     token_ids = token_ids[0]
-
-        # encoder_hidden_states = self.text_encoder(token_ids)[0]
         _, ret_ft_unet = self.unet(latents, timesteps,
                                    encoder_hidden_states=encoder_hidden_states_c).sample
         final_ret_ft = []
-        for ei in ret_ft_unet:  # unet提取的特征
+        for ei in ret_ft_unet:  # unet提取的多尺度特征
             final_ret_ft.append(ei)
 
         my_decout_f = []
@@ -310,19 +258,24 @@ class FeatureExtractor(torch.nn.Module):
         return my_decout
 
 class Backbone(nn.Module):
-    def __init__(self, position_embedding,num_channels=[96, 192, 384, 768]):
+    def __init__(self, position_embedding,strides=[4,8,16,32],num_channels=[128, 256, 512, 1024]):
+        """
+        strides: x4,x8,x16,x32
+        """
         super().__init__()
+        self.strides=strides
+        self.num_channels=num_channels
         self.diff_feature_extract = FeatureExtractor(num_channels=num_channels)
         self.position_embedding=position_embedding
         # T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         self.mean = torch.tensor([0.485, 0.456, 0.406]).unsqueeze(0).unsqueeze(2).unsqueeze(3)
         self.std = torch.tensor([0.229, 0.224, 0.225]).unsqueeze(0).unsqueeze(2).unsqueeze(3)
 
-    def forward(self, tensor_list: NestedTensor, num_frames: int, captions: str):
+    def forward(self, tensor_list: NestedTensor, captions: str):
         _, t = tensor_list.tensors.shape[:2]
         tensor_list.tensors = rearrange(tensor_list.tensors, 'b t c h w -> (b t) c h w')
         tensor_list.mask = rearrange(tensor_list.mask, 'b t h w -> (b t) h w')
-        n_imgs = rearrange(tensor_list.tensors, '(b t) c h w -> b t c h w', t=num_frames)
+        n_imgs = rearrange(tensor_list.tensors, '(b t) c h w -> b t c h w', t=t)
         o_imgs = n_imgs * self.std.cuda() + self.mean.cuda()
         dn_imgs = o_imgs * 2 - 1
         batch = {}
@@ -345,7 +298,7 @@ class Backbone(nn.Module):
         return out, pos
 
 
-def build_video_swin_backbone(args):
+def build_modelscope_backbone(args):
     position_embedding = build_position_encoding(args)
     model = Backbone(position_embedding)
     return model

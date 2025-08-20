@@ -1,5 +1,4 @@
 transformers==4.46.3
-cython 
 scipy
 opencv-python
 pillow
@@ -14,10 +13,8 @@ peft
 huggingface_hub==0.25.0
 accelerate
 diffusers
-einops
-decord
 tqdm
-safetensors
-omegaconf
-pydantic
-compel
+pycocotools
+fvcore
+ftfy
+tensorboard

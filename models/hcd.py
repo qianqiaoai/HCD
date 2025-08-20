@@ -16,22 +16,18 @@ from util.misc import (NestedTensor, nested_tensor_from_tensor_list,
                        nested_tensor_from_videos_list,
                        accuracy, get_world_size, interpolate,
                        is_dist_avail_and_initialized, inverse_sigmoid)
-
 from .position_encoding import PositionEmbeddingSine1D
-from .backbone import build_backbone
 from .deformable_transformer import build_deforamble_transformer
 from .segmentation import VisionLanguageFusionModule
 from .matcher import build_matcher
 from .criterion import SetCriterion
 from .postprocessors import build_postprocessors
-from .decoder import MSO
+from .temporal_mask_refinement import MSO
 from .modules import LFMResizeAdaptive
 from .text_encoder.text_encoder import TextEncoder, FeatureResizer
-from .memory_cross_attention import memory_cross_attention
 import copy
 from einops import rearrange, repeat
 import warnings
-
 warnings.filterwarnings("ignore")
 
 
@@ -47,8 +43,7 @@ class HCD(nn.Module):
 
     def __init__(self, args, backbone, transformer, num_classes, num_queries, num_feature_levels,
                  num_frames, mask_dim,controller_layers, dynamic_mask_channels,
-                 aux_loss=False, with_box_refine=False, two_stage=False,
-                 freeze_text_encoder=False, rel_coord=True, matcher=None):
+                 aux_loss=False, with_box_refine=False, two_stage=False, rel_coord=True, matcher=None):
         """ Initializes the model.
         Parameters:
             backbone: torch module of the backbone to be used. See backbone.py
@@ -219,7 +214,7 @@ class HCD(nn.Module):
         if not isinstance(samples, NestedTensor):
             samples = nested_tensor_from_videos_list(samples, 1 if self.training else 16)  # 对视频进行填充，使高和宽一致
 
-        features, visual_pos, encoder_hidden_states_c = self.backbone(samples, captions)  # 扩散模型获取特征
+        features, visual_pos= self.backbone(samples, captions)  # 扩散模型获取特征
         b = len(captions)
         t = visual_pos[0].shape[0] // b
 
@@ -270,7 +265,7 @@ class HCD(nn.Module):
                     src = self.input_proj[l](srcs[-1])
                 m = samples.mask
                 mask = F.interpolate(m[None].float(), size=src.shape[-2:]).to(torch.bool)[0]
-                pos_l = self.backbone[1](NestedTensor(src, mask)).to(src.dtype)
+                pos_l = self.backbone.position_embedding(NestedTensor(src, mask)).to(src.dtype)
                 srcs.append(src)
                 masks.append(mask)
                 poses.append(pos_l)
@@ -629,11 +624,8 @@ def build(args):
     device = torch.device(args.device)
 
     # backbone
-    if 'itcross_video_swin' in args.backbone:
-        from models.it_feature_extract import build_video_swin_backbone
-        backbone = build_video_swin_backbone(args)
-    else:
-        backbone = build_backbone(args)
+    from models.it_feature_extract import build_modelscope_backbone
+    backbone = build_modelscope_backbone(args)
 
     transformer = build_deforamble_transformer(args)
     matcher = build_matcher(args)
@@ -652,7 +644,6 @@ def build(args):
         aux_loss=args.aux_loss,
         with_box_refine=args.with_box_refine,
         two_stage=args.two_stage,
-        freeze_text_encoder=args.freeze_text_encoder,
         rel_coord=args.rel_coord,
         matcher=matcher
     )

@@ -32,7 +32,7 @@ def get_args_parser():
     parser.add_argument('--two_stage', default=False, action='store_true')  # NOTE: must be false
 
     # * Backbone
-    parser.add_argument('--backbone', default='itcross_video_swin', type=str,
+    parser.add_argument('--backbone', default='modelscope', type=str,
                         help="Name of the convolutional backbone to use")
     parser.add_argument('--text_backbone', default='Roberta', type=str,
                         help="Name of the convolutional backbone to use")
@@ -46,6 +46,8 @@ def get_args_parser():
                         help="Number of encoding layers in the transformer")
     parser.add_argument('--dec_layers', default=4, type=int,
                         help="Number of decoding layers in the transformer")
+    parser.add_argument('--dim_feedforward', default=2048, type=int,
+                        help="Intermediate size of the feedforward layers in the transformer blocks")
     parser.add_argument('--hidden_dim', default=256, type=int,
                         help="Size of the embeddings (dimension of the transformer)")
     parser.add_argument('--dropout', default=0.1, type=float,
@@ -104,7 +106,7 @@ def get_args_parser():
     parser.add_argument('--dataset_file', default='ytvos', help='Dataset name')
     parser.add_argument('--coco_path', type=str, default='../fsas/coco')
     parser.add_argument('--ytvos_path', type=str, default='/home/tom/fsas/ref-youtube')
-    parser.add_argument('--davis_path', type=str, default='/home/tom/fsas/ref-davis')
+    parser.add_argument('--davis_path', type=str, default='/mnt/data/user/zhangruixin/ref-davis')
     parser.add_argument('--mevis_path', type=str, default='/home/tom/fsas/MeViS')
     parser.add_argument('--a2d_path', type=str, default='/root/fsas/a2d_sentences')
     parser.add_argument('--jhmdb_path', type=str, default='/home/tom/fsas/jhmdb_sentences')

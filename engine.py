@@ -48,11 +48,7 @@ def train_one_epoch(args, model: torch.nn.Module, criterion: torch.nn.Module,
             outputs = model(**put_in)
             if 'cross_attn' in outputs.keys():
                 cad = outputs['cross_attn']
-                # ca = cad["attn"]
-                # ti_length = cad["len"]
                 imp, tgt, efot = cad["imp"]
-                # loss_ca = (1 - F.cosine_similarity(imp, tgt.detach(), dim=1)).sum()
-                # ca_mean = torch.cat([cae.unsqueeze(0) for cae in ca],0).mean(dim=0)
                 loss_ca = 0
                 for eindx, eimg in enumerate(imp):
                     loss1 = (1 - F.cosine_similarity(eimg, tgt[eindx].detach(), dim=1)).sum()

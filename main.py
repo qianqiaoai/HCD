@@ -22,7 +22,7 @@ from datasets import build_dataset, get_coco_api_from_dataset
 from engine import train_one_epoch, evaluate, evaluate_a2d
 from models import build_model_diff_cross as build_model
 
-from utils_inf import pre_trained_model_to_finetune
+from tools.load_pretrained_weights import pre_trained_model_to_finetune
 from util.logger import TensorboardLogger
 import opts
 import os
@@ -68,7 +68,8 @@ def main(args):
         dict = torch.load(args.resume_path, map_location="cpu")
         model.load_state_dict(dict["model"])
     model.to(device)
-    if not args.eval and args.resume:
+
+    if not args.eval:
         peft_config = LoraConfig(task_type='OTHER', inference_mode=False, r=16, lora_alpha=32,
                                  lora_dropout=0.1,
                                  target_modules='.*unet.*to_[q,v].*')
@@ -77,10 +78,11 @@ def main(args):
     for n, p in model.named_parameters():
         if not match_name_keywords(n, ['cv_model', 'unet', 'vae', 'text_encoder']):
             p.requires_grad = True
-    model_without_ddp = model
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=True)
         model_without_ddp = model.module
+    else:
+        model_without_ddp=model
 
     n_parameters = sum(p.numel() for p in model_without_ddp.parameters() if p.requires_grad)
     print('number of params:', n_parameters)
