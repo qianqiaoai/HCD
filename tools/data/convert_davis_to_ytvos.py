@@ -275,8 +275,8 @@ def create_meta_annotaions(data_root='data/refer_davis', output_root='data/refer
         json.dump(val_meta, out)
 
 if __name__ == '__main__':
-    data_root = "data/refer_davis"
-    output_root = "data/refer_davis"
+    data_root = "/mnt/data/user/zhangruixin/ref-davis"
+    output_root = "/mnt/data/user/zhangruixin/ref-davis"
     print("Converting refer_davis to refer_youtube_vos format....")
     mv_images_to_folder(data_root, output_root)
     create_meta_expressions(data_root, output_root)

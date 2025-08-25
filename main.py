@@ -1,6 +1,6 @@
 """
 Training script of HCD
-Modified from DETR SgMg and VD-IT (https://github.com/facebookresearch/detr, https://github.com/bo-miao/SgMg, https://github.com/buxiangzhiren/VD-IT) 
+Modified from DETR, SgMg and VD-IT (https://github.com/facebookresearch/detr, https://github.com/bo-miao/SgMg, https://github.com/buxiangzhiren/VD-IT) 
 """
 import argparse
 import datetime

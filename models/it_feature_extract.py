@@ -1,3 +1,7 @@
+"""
+Obtaining features using Unet
+Modified from DETR, SgMg and VD-IT (https://github.com/facebookresearch/detr, https://github.com/bo-miao/SgMg, https://github.com/buxiangzhiren/VD-IT) 
+"""
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -218,15 +222,15 @@ class FeatureExtractor(torch.nn.Module):
         # pixel_values_ = rearrange(pixel_values, "b f c h w -> (b f) c h w")
         pixel_values_ = (pixel_values + 1) / 2
         first_feature = self.first_feature(pixel_values_)
-        image_tokens = self.cv_model(original_pixel_values).last_hidden_state  # clip编码
+        image_tokens = self.cv_model(original_pixel_values).last_hidden_state  #[bf,257,1280]
 
         encoder_hidden_states = self.get_prompt_ids(batch["captions"])  # 文本clip编码预处理
-        encoder_hidden_states = self.text_encoder(encoder_hidden_states.cuda())[0]  # clip编码(1,77,1024)
-        encoder_hidden_states = encoder_hidden_states.repeat_interleave(repeats=video_length, dim=0)  # (b*f,l,1024)
-        image_tokens = self.projection(image_tokens)  # 1280->1024(b*f,length,1024)
-        encoder_hidden_states_c = self.cross_attn(encoder_hidden_states, image_tokens)  # 模态融合(b*f,l,1024)
+        encoder_hidden_states = self.text_encoder(encoder_hidden_states.cuda())[0]  # [b,77,1024]
+        encoder_hidden_states = encoder_hidden_states.repeat_interleave(repeats=video_length, dim=0)  # [b*f,77,1024]
+        image_tokens = self.projection(image_tokens)  # 1280->1024[b*f,257,1024]
+        encoder_hidden_states_c = self.cross_attn(encoder_hidden_states, image_tokens)  # 模态融合[b*f,77,1024]
 
-        latents = self.tensor_to_vae_latent(pixel_values)  # 用vae进行数据压缩 latents(b,4,f,h/8,w/8)
+        latents = self.tensor_to_vae_latent(pixel_values)  # 用vae压缩 latents(b,4,f,h/8,w/8)
 
         # Get video length
         video_length = latents.shape[2]

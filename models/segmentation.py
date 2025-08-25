@@ -1,6 +1,6 @@
 """
 Segmentaion Part 
-Modified from DETR and SgMg (https://github.com/facebookresearch/detr, https://github.com/bo-miao/SgMg) 
+Modified from DETR, SgMg and VD-IT (https://github.com/facebookresearch/detr, https://github.com/bo-miao/SgMg, https://github.com/buxiangzhiren/VD-IT) 
 """
 from collections import defaultdict
 from typing import List, Optional
@@ -12,13 +12,6 @@ from torch import Tensor
 from PIL import Image
 
 from einops import rearrange, repeat
-
-try:
-    from panopticapi.utils import id2rgb, rgb2id
-except ImportError:
-    pass
-
-import fvcore.nn.weight_init as weight_init
 
 from .position_encoding import PositionEmbeddingSine1D
 

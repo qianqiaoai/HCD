@@ -1,6 +1,6 @@
 """
-VDIT model class.
-Modified from DETR and SgMg (https://github.com/facebookresearch/detr, https://github.com/bo-miao/SgMg) 
+HCD model class.
+Modified from DETR, SgMg and VD-IT (https://github.com/facebookresearch/detr, https://github.com/bo-miao/SgMg, https://github.com/buxiangzhiren/VD-IT) 
 """
 import sys
 import time
