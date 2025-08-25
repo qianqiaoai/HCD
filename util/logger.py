@@ -4,7 +4,6 @@ Dumps things to tensorboard and console
 
 import os
 import warnings
-import git
 
 import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter

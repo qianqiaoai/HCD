@@ -12,8 +12,9 @@ git clone https://github.com/buxiangzhiren/HCD
 cd HCD
 ```
 
-Then, install Pytorch==1.11.0 (CUDA 11.3) torchvision==0.12.0 and the necessary packages as well as pycocotools.
+Then, install Pytorch, torchvision and the necessary packages as well as pycocotools.
 ```
+pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu121
 pip install -r requirements.txt 
 pip install 'git+https://github.com/facebookresearch/fvcore' 
 pip install -U 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'

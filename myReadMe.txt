@@ -1,4 +1,0 @@
-huggingface-hub版本改成0.25.0
-Text-To-Video-Finetuning/mymodels下五个py文件需要修改import transformer中的路径
-安装tensorflow
-deformable transformer的编译要放到最后

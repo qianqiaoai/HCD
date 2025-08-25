@@ -11,18 +11,14 @@ now=$(date +"%T")
 echo "Current time : $now"
 echo "Current path : $PWD"
 
-BACKBONE="itcross_video_swin"
-BACKBONE_PRETRAINED="./checkpoints/swin_base_patch244_window877_kinetics600_22k.pth"
 OUTPUT_DIR="./checkpoints/results/VDIT_${BACKBONE}_eval"
 CHECKPOINT="./checkpoints/checkpoint.pth"
-python inference_davis.py --with_box_refine --binary --freeze_text_encoder \
+python inference_davis.py --with_box_refine --binary \
   --eval \
   --ngpu=${GPUS_PER_NODE} \
   --output_dir=${OUTPUT_DIR} \
   --resume=${CHECKPOINT} \
-  --backbone=${BACKBONE} \
   --amp \
-  --backbone_pretrained=${BACKBONE_PRETRAINED} \
 
 
 

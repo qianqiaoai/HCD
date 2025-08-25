@@ -1,0 +1,231 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# celery beat schedule file
+celerybeat-schedule
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Large files (over 10MB)
+# This is a custom rule to prevent large files from being committed
+# You can also use git hooks or git-lfs for better large file management
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.iso
+*.dmg
+*.pkg
+*.deb
+*.rpm
+*.exe
+*.msi
+*.bin
+*.dat
+*.db
+*.sqlite
+*.sqlite3
+*.log
+*.dump
+*.backup
+*.bak
+*.tmp
+*.temp
+
+# Video files (usually large)
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.mkv
+*.webm
+*.m4v
+*.3gp
+
+# Audio files (can be large)
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.wma
+
+# Image files (can be large)
+*.psd
+*.ai
+*.eps
+*.tiff
+*.tif
+*.bmp
+*.raw
+*.cr2
+*.nef
+*.arw
+
+# Archive files
+*.zip
+*.tar
+*.gz
+*.bz2
+*.xz
+*.rar
+*.7z
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.mdb
+*.accdb
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+*.tmp
+*.temp
+
+# Log files
+*.log
+*.out
+*.err
+
+# Data files (often large)
+*.csv
+*.json
+*.xml
+*.yaml
+*.yml
+*.parquet
+*.h5
+*.hdf5
+*.nc
+*.netcdf
+
+# Model files (machine learning)
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.hdf5
+*.pb
+*.onnx
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# Note: For files that are exactly 10MB or larger, you may need to use git hooks
+# or manually check file sizes before committing. This .gitignore covers common
+# file types that are typically large.
