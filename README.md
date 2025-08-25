@@ -11,7 +11,7 @@ Temporal-Conditional Referring Video Object Segmentation with Noise-Free Text-to
 </h1>
 </div>
 
-<p align="center"><img src="docs/model.png" width="800"/></p>
+<!-- <p align="center"><img src="docs/model.png" width="800"/></p> -->
 
 > [**Temporal-Conditional Referring Video Object Segmentation with Noise-Free Text-to-Video Diffusion Model**](https://arxiv.org/abs/2508.13584)
 >
