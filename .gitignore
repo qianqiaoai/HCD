@@ -1,0 +1,31 @@
+# Logs
+*.log
+logs/
+output/
+results/
+# Model weights / checkpoints
+*.pth
+*.pt
+*.ckpt
+*.bin
+*.h5
+*.npz
+*.safetensors
+# Datasets / archives
+*.zip
+*.tar
+*.tar.gz
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+# System / IDE
+.DS_Store
+*.idea/
+.vscode/
+# Virtual env
+.venv/
+venv/
+.env/
